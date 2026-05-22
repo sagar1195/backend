@@ -20,6 +20,12 @@ export default tseslint.config(
       'unicorn/better-regex': 'warn',
       'unicorn/no-process-exit': 'off',
       'unicorn/no-array-reduce': 'off',
+      'unicorn/filename-case': [
+        'error',
+        {
+          case: 'PASCAL_CASE',
+        },
+      ],
       'unicorn/prevent-abbreviations': [
         'error',
         { replacements: { params: false } },

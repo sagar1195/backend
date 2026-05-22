@@ -1,53 +1,66 @@
-import express from 'express';
-
-import { auth } from '../middleware/auth.js';
+import express, { response } from 'express';
+import Task from '../models/task.models.js';
+// import { auth } from '../middleware/auth.js';
 
 export const taskRouter = express.Router();
 
-taskRouter.get('/', (request, response) => {
-  const search = request.query.search as string | undefined;
-  if (search) {
-    response.json({
-      tasks: [
-        {
-          id: 1,
-          title: `Search Result for ${search}`,
-          completed: false,
-        },
-      ],
-    });
+taskRouter.get('/', async (request, response, next) => {
+  try {
+    const tasks = await Task.find().sort({ createdAt: -1 });
+    response.json(tasks);
+  } catch (error) {
+    next(error);
   }
-  response.json({
-    tasks: [
-      { id: 1, title: 'Learn Typescript', completed: true },
-      { id: 2, title: 'Learn Express', completed: false },
-    ],
-  });
 });
 
-taskRouter.get('/:id', (request, response) => {
-  const taskId = request.params.id;
-  response.json({
-    task: { id: taskId, title: `Task ${taskId}`, completed: true },
-  });
+taskRouter.get('/:id', async (request, response, next) => {
+  try {
+    const task = await Task.findById(request.params.id);
+    if (!task) return response.status(404).json({ message: 'Task not found' });
+    response.json(task);
+  } catch (error) {
+    next(error);
+  }
 });
-taskRouter.use(auth);
+// taskRouter.use(auth);
 
-taskRouter.post('/', (request, response) => {
-  //   res.json({ task: { id: 3, title: "New task", completed: false } });
-  const title = request.body.title;
-  const completed = request.body.completed;
-  response.json({ tasks: { title, completed } });
+taskRouter.post('/', async (request, response, next) => {
+  try {
+    const { name, description, dueDate, completed } = request.body;
+    const task = new Task({
+      name,
+      description,
+      dueDate,
+      completed,
+    });
+    await task.save();
+    response.status(201).json({ task });
+  } catch (error) {
+    next(error);
+  }
 });
 
-taskRouter.put('/:id', (request, response) => {
-  const taskId = request.params.id;
-  const title = request.body.title;
-  const completed = request.body.completed;
-  response.json({ tasks: { id: taskId, title, completed } });
+taskRouter.put('/:id', async (request, response, next) => {
+  try {
+    const { name, description, dueDate, completed } = request.body;
+    const task = await Task.findByIdAndUpdate(
+      request.params.id,
+      { name, description, dueDate, completed },
+      { new: true, runValidators: true },
+    );
+    if (!task) return response.status(404).json({ message: 'Task not found' });
+    response.json({ task });
+  } catch (error) {
+    next(error);
+  }
 });
 
-taskRouter.delete('/:id', (request, response) => {
-  const taskId = request.params.id;
-  response.json({ message: `Task ${taskId} deleted` });
+taskRouter.delete('/:id', async (request, response, next) => {
+  try {
+    const task = await Task.findByIdAndDelete(request.params.id);
+    if (!task) return response.status(404).json({ message: 'Task not found' });
+    response.json({ message: 'Task deleted successfully' });
+  } catch (error) {
+    next(error);
+  }
 });
